@@ -1,0 +1,209 @@
+a)
+    P = {
+    PROG -> FUNCT  PROG'
+    PROG' -> PROG |
+    FUNCT -> TYPE ID ( PARAMS ) : CMDS end
+    PARAMS -> PARAM PARAM'
+    PARAM' -> ; PARAMS | PARAM
+    PARAM -> TYPE ID
+    TYPE -> int | bool | void
+    CMDS -> CMD CMD'
+    CMD' -> ; CMDS | CMD
+    CMD -> COND | REPEAT | ID := EXP | CALL | read ID | write EXP
+    REPEAT -> while EXP : CMDS end | repeat : CMDS until EXP end
+    COND -> if EXP : CMDS end | if EXP : CMDS end else : CMDS end
+    CALL -> ID ( ARGS )
+    ARGS -> EXP ARGS'
+    ARGS' -> ; ARGS | EXP
+    EXP -> REXP EXP'
+    EXP' -> OPL REXP EXP' |
+    OPL -> and | or
+    REXP -> AEXP REXP'
+    REXP' -> OPC AEXP REXP' |
+    OPC -> = | > | <
+    AEXP -> SEXP AEXP'
+    AEXP' -> OPM SEXP AEXP' |
+    OPM -> + | - | * | /
+    SEXP -> not SEXP | true | false | NUM | ID | CALL | ( EXP )
+    ID -> sequência de letras e números iniciada por letra (tratado no léxico)
+    NUM -> sequência de números podendo conter um ponto (tratado no léxico)
+}
+
+b) 
+   FIRST{PROG} = {int, bool, void}
+   FIRST{PROG'} = {int,bool, void, <vazio> }
+   FIRST{FUNCT} = FIRST {PROG}
+   FIRST{PARAMS}  = FIRST{FUNCT}
+   FIRST{PARAM'}  = { ; } U FIRST{FUNCT}
+   FIRST{PARAM} = FIRST {PARAMS}
+   FIRST{TYPE}  = FIRST {PARAMS}
+   FIRST{CMDS} = FIRST {CMD}
+   FIRST{CMD'} = {;} U FIRST{CMD}
+   FIRST{CMD}  = {if, while, repeat, <id>, read, write}
+   FIRST{REPEAT} = {while, repeat}
+   FIRST{COND}  = {if}
+   FIRST{CALL}  = {<id>}
+   FIRST{ARGS}  = FIRST{EXP}
+   FIRST{ARGS'} =  {;} U FIRST{EXP} 
+   FIRST{EXP} = FIRST{REXP}
+   FIRST{EXP'} = {and, or, <vazio>} U FIRST{EXP}
+   FIRST{OPL}  = {and, or}
+   FIRST{REXP} = FIRST{AEXP}
+   FIRST{REXP'}  = FIRST{OPC} U {<vazio>}
+   FIRST{OPC}  = {=, >, <}
+   FIRST{AEXP}  = FIRST{SEXP}
+   FIRST{AEXP'}  = FIRST{OPM} U {<vazio>}
+   FIRST{OPM}  = {+, -, *, /}
+   FIRST{SEXP} = {not, true, false, (, <id>} U FIRST{CALL}
+
+   FOLLOW{PROG} = {$} U FOLLOW{FUNCT}
+   FOLLOW{PROG'} = FOLLOW{PROG}
+   FOLLOW{FUNCT} = FIRST{PROG'}- { <vazio> }
+   FOLLOW{PARAMS}  = { ) }
+   FOLLOW{PARAM'}  = FOLLOW{PARAMS}
+   FOLLOW{PARAM} = FIRST{PARAM}
+   FOLLOW{TYPE} = FIRST{ID}
+   FOLLOW{CMDS} = {end}
+   FOLLOW{CMD'} = FOLLOW{CMDS}
+   FOLLOW{CMD} = FIRST{CMD'}- { <vazio> }
+   FOLLOW{REPEAT} = FIRST{CMD'}- { <vazio> }
+   FOLLOW{COND}  = FIRST{CMD'}- { <vazio> }
+   FOLLOW{CALL}  = FIRST{CMD'}- { <vazio> }
+   FOLLOW{ARGS}  = { ) }
+   FOLLOW{ARGS'}  = FOLLOW{ARGS}
+   FOLLOW{EXP} = FIRST{ARGS}
+   FOLLOW{EXP'} = FIRST{ARGS}
+   FOLLOW{OPL}  = FIRST{REXP}
+   FOLLOW{REXP}  = FIRST{EXP'}- { <vazio> }
+   FOLLOW{REXP'}  = FIRST{EXP'} - { <vazio> }
+   FOLLOW{OPC}   = FIRST{AEXP}
+   FOLLOW{AEXP}  = FIRST{REPX'} - { <vazio> }
+   FOLLOW{AEXP'}  = FIRST{REPX'} - { <vazio> }
+   FOLLOW{OPM}  = FIRST{SEXP}
+   FOLLOW{SEXP}  = FIRST{AEXP'}
+
+c)
+
+    % token ( ) end if while repeat ; : int bool void := read write until else and or = > < + - * / true false not
+    % start PROG
+
+    %%
+    PROG    :  FUNCT  PROG'
+    PROG'   :  PROG 
+    |;
+    FUNCT   :  TYPE ID ( PARAMS ) : CMDS end
+    PARAMS  :  PARAM PARAM'
+    PARAM'  :  ; PARAMS | PARAM
+    PARAM   :  TYPE ID
+    TYPE    :  int | bool | void
+    CMDS    :  CMD CMD'
+    CMD'    :  ; CMDS | CMD
+    CMD     :  COND | REPEAT | ID := EXP | CALL | read ID | write EXP
+    REPEAT  :  while EXP : CMDS end | repeat : CMDS until EXP end
+    COND    :  if EXP : CMDS end | if EXP : CMDS end else : CMDS end
+    CALL    :  ID ( ARGS )
+    ARGS    :  EXP ARGS'
+    ARGS'   :  ; ARGS | EXP
+    EXP     :  REXP EXP'
+    EXP'    :  OPL REXP EXP' 
+    |;
+    OPL     :  and | or
+    REXP    :  AEXP REXP'
+    REXP'   :  OPC AEXP REXP' 
+    |;
+    OPC     :  = | > | <
+    AEXP    :  SEXP AEXP'
+    AEXP'   :  OPM SEXP AEXP' 
+    |;
+    OPM     :  + | - | * | /
+    SEXP    :  not SEXP | true | false | NUM | ID | CALL | ( EXP )
+
+d) 
+//ARGS
+
+    char* ARGS(char* t){
+        
+        if(in_FIRST(t, EXP) == 0 ){
+            t = EXP(t);
+            if(in_FIRST(t, ARGSLINHA) == 0){
+                return ARGSLINHA(t);
+            }else{
+                return trata_erro(t);
+            }
+        }else{
+            trata_erro(t);
+        }
+    }
+
+//CMD
+
+    char* CMD(char* t){
+        if equals(t, "read") == 0 {
+            return trata_n_terminal(t, "read");
+        }else{
+            if(equals(t, "write")==0){
+                return trata_n_terminal(t, "write");
+            }else{
+                if(in_FIRST(t, COND) == 0) {
+                    return COND(t);
+                }else{
+                    if(in_FIRST(t, REPEAT) == 0 ){
+                        return REPEAT(t);
+                    }else{
+                        if(in_FIRST(t, ID)){
+                            t = trata_n_terminal(t, ":=");
+                            if(in_FIRST(t, EXP) == 0){
+                                return EXP(t);
+                            }else{
+                                return trata_erro(t);
+                            }
+                        }else{
+                            if(in_FIRST(t, CALL)== 0){
+                                return CALL(t);
+                            }else{
+                                return trata_erro(t);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+//SEXP
+
+    char* SEXP(char* t){
+        if equals(t,"not") == 0{
+            t = trata_n_terminal(t,'not');
+            return SEXP(t);
+        }else{
+            if equals(t,true) == 0 {
+                return trata_n_terminal(t, "true")
+            }else{
+                if equals(t, false) == 0{
+                    return trata_n_terminal(t, "false")
+                }else{
+                    if equals(t, '(' ) {
+                        return trata_n_terminal(t, '(')
+                    }else{
+                        if in_FIRST(t,NUM) == 0{
+                            return NUM(t);
+                        }else{
+                            if in_FIRST(t,ID) == 0{
+                                return ID(t);
+                            }else{
+                                if in_FIRST(t, CALL) == 0{
+                                    return CALL(t);
+                                }else{
+                                   return trata_erro(t);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+e)
+  
